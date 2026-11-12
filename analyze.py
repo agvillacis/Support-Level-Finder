@@ -424,37 +424,39 @@ function buildCalc(container, data) {{
       <div class="calc-box">
         <h3>Long Put — Protective Hedge</h3>
         <p style="font-size:0.8rem;color:#666;margin-bottom:12px">Buy a put for downside protection. Calculates breakeven and profit zones.</p>
-        <div class="calc-row"><label>Put Strike ($)</label><input id="lp_strike" type="number" placeholder="e.g. 160" step="0.5"></div>
-        <div class="calc-row"><label>Premium Paid ($)</label><input id="lp_premium" type="number" placeholder="auto-fills ↑" step="0.01"></div>
-        <div class="calc-row"><label>Contracts</label><input id="lp_qty" type="number" placeholder="1" value="1" step="1"></div>
-        <button class="calc-btn" onclick="calcLongPut()">Calculate</button>
-        <div class="calc-result" id="lp_result"></div>
+        <div class="calc-row"><label>Put Strike ($)</label><input class="lp_strike" type="number" placeholder="e.g. 160" step="0.5"></div>
+        <div class="calc-row"><label>Premium Paid ($)</label><input class="lp_premium" type="number" placeholder="auto-fills ↑" step="0.01"></div>
+        <div class="calc-row"><label>Contracts</label><input class="lp_qty" type="number" placeholder="1" value="1" step="1"></div>
+        <button class="calc-btn lp_btn">Calculate</button>
+        <div class="calc-result lp_result"></div>
       </div>
 
       <div class="calc-box">
         <h3>Sold Puts — Cost Basis if Assigned</h3>
         <p style="font-size:0.8rem;color:#666;margin-bottom:12px">Sell puts to collect premium. Shows effective cost if assigned at each strike.</p>
-        <div class="calc-row"><label>Strike 1 ($)</label><input id="sp_s1" type="number" placeholder="e.g. 170" step="0.5"></div>
-        <div class="calc-row"><label>Premium Recv ($)</label><input id="sp_p1" type="number" placeholder="auto-fills ↑" step="0.01"></div>
-        <div class="calc-row"><label>Strike 2 ($) <small style="color:#555">(opt)</small></label><input id="sp_s2" type="number" placeholder="e.g. 165" step="0.5"></div>
-        <div class="calc-row"><label>Premium Recv ($)</label><input id="sp_p2" type="number" placeholder="auto-fills ↑" step="0.01"></div>
-        <button class="calc-btn" onclick="calcSoldPuts()">Calculate</button>
-        <div class="calc-result" id="sp_result"></div>
+        <div class="calc-row"><label>Strike 1 ($)</label><input class="sp_s1" type="number" placeholder="e.g. 170" step="0.5"></div>
+        <div class="calc-row"><label>Premium Recv ($)</label><input class="sp_p1" type="number" placeholder="auto-fills ↑" step="0.01"></div>
+        <div class="calc-row"><label>Strike 2 ($) <small style="color:#555">(opt)</small></label><input class="sp_s2" type="number" placeholder="e.g. 165" step="0.5"></div>
+        <div class="calc-row"><label>Premium Recv ($)</label><input class="sp_p2" type="number" placeholder="auto-fills ↑" step="0.01"></div>
+        <button class="calc-btn sp_btn">Calculate</button>
+        <div class="calc-result sp_result"></div>
       </div>
 
       <div class="calc-box">
         <h3>Sold Calls — Covered Call (Own Shares)</h3>
         <p style="font-size:0.8rem;color:#666;margin-bottom:12px">You own the shares and sell a call above your cost basis. Collect premium now; if stock rises above strike, shares get called away at that price.</p>
-        <div class="calc-row"><label>Call Strike ($)</label><input id="sc_strike" type="number" placeholder="e.g. 190" step="0.5"></div>
-        <div class="calc-row"><label>Premium Recv ($)</label><input id="sc_premium" type="number" placeholder="auto-fills ↑" step="0.01"></div>
-        <div class="calc-row"><label>Your Cost Basis ($)</label><input id="sc_basis" type="number" placeholder="e.g. 165" step="0.5"></div>
-        <div class="calc-row"><label>Contracts</label><input id="sc_qty" type="number" placeholder="1" value="1" step="1"></div>
-        <button class="calc-btn" onclick="calcSoldCalls()">Calculate</button>
-        <div class="calc-result" id="sc_result"></div>
+        <div class="calc-row"><label>Call Strike ($)</label><input class="sc_strike" type="number" placeholder="e.g. 190" step="0.5"></div>
+        <div class="calc-row"><label>Premium Recv ($)</label><input class="sc_premium" type="number" placeholder="auto-fills ↑" step="0.01"></div>
+        <div class="calc-row"><label>Your Cost Basis ($)</label><input class="sc_basis" type="number" placeholder="e.g. 165" step="0.5"></div>
+        <div class="calc-row"><label>Contracts</label><input class="sc_qty" type="number" placeholder="1" value="1" step="1"></div>
+        <button class="calc-btn sc_btn">Calculate</button>
+        <div class="calc-result sc_result"></div>
       </div>
 
     </div>
   </div>`;
+
+  function q(cls) {{ return container.querySelector('.' + cls); }}
 
   // Auto-fill premium when strike is entered (Enter key or blur)
   function lookupPremium(strikeVal, lastArr, bidArr, askArr) {{
@@ -471,9 +473,9 @@ function buildCalc(container, data) {{
     return last > 0 ? last.toFixed(2) : '';
   }}
 
-  function wireAutoFill(strikeId, premiumId, lastArr, bidArr, askArr) {{
-    const strikeInput = container.querySelector('#' + strikeId);
-    const premiumInput = container.querySelector('#' + premiumId);
+  function wireAutoFill(strikeClass, premiumClass, lastArr, bidArr, askArr) {{
+    const strikeInput = container.querySelector('.' + strikeClass);
+    const premiumInput = container.querySelector('.' + premiumClass);
     if (!strikeInput || !premiumInput) return;
     const fill = () => {{
       const val = lookupPremium(strikeInput.value, lastArr, bidArr, askArr);
@@ -487,109 +489,90 @@ function buildCalc(container, data) {{
   wireAutoFill('sp_s1', 'sp_p1', data.put_last, data.put_bid, data.put_ask);
   wireAutoFill('sp_s2', 'sp_p2', data.put_last, data.put_bid, data.put_ask);
   wireAutoFill('sc_strike', 'sc_premium', data.call_last, data.call_bid, data.call_ask);
-}}
 
-function calcLongPut() {{
-  const strike = parseFloat(document.getElementById('lp_strike').value);
-  const premium = parseFloat(document.getElementById('lp_premium').value);
-  const qty = parseInt(document.getElementById('lp_qty').value) || 1;
-  if (isNaN(strike) || isNaN(premium)) {{ alert('Enter strike and premium'); return; }}
-
-  const breakeven = strike - premium;
-  const cost = premium * 100 * qty;
-  const profitAt = (p) => ((strike - p - premium) * 100 * qty).toFixed(2);
-  const scenarios = [breakeven * 0.98, breakeven * 0.95, breakeven * 0.90].map(p => p.toFixed(2));
-
-  const r = document.getElementById('lp_result');
-  r.style.display = 'block';
-  r.innerHTML = `
-    <div>Strike: <span class="hl">$${{strike.toFixed(2)}}</span>  ·  Premium: <span class="hl">$${{premium.toFixed(2)}}</span>  ·  Qty: ${{qty}} contract${{qty>1?'s':''}}</div>
-    <div>Total Cost: <span class="red">$${{cost.toFixed(2)}}</span></div>
-    <div>Break-even: <span class="hl">$${{breakeven.toFixed(2)}}</span> (stock must close below this)</div>
-    <div>Drop needed from <span class="hl">$${{CURRENT_PRICE.toFixed(2)}}</span>: <span class="orange">${{((CURRENT_PRICE - breakeven)/CURRENT_PRICE*100).toFixed(1)}}%</span></div>
-    <div style="margin-top:8px;font-size:0.8rem;color:#666;">P&L at various prices:</div>
-    ${{[breakeven*0.98, breakeven*0.95, breakeven*0.90, breakeven*0.80].map(p => {{
-      const pnl = (strike - p - premium) * 100 * qty;
-      return `<div>@ $${{p.toFixed(2)}}: <span class="${{pnl>0?'green':'red'}}">+$${{pnl.toFixed(0)}}</span></div>`;
-    }}).join('')}}
-  `;
-}}
-
-function calcSoldPuts() {{
-  const s1 = parseFloat(document.getElementById('sp_s1').value);
-  const p1 = parseFloat(document.getElementById('sp_p1').value);
-  const s2 = parseFloat(document.getElementById('sp_s2').value);
-  const p2 = parseFloat(document.getElementById('sp_p2').value);
-  if (isNaN(s1) || isNaN(p1)) {{ alert('Enter at least Strike 1 and its premium'); return; }}
-
-  const r = document.getElementById('sp_result');
-  r.style.display = 'block';
-
-  let html = '';
-  const totalPremium = p1 + (isNaN(p2) ? 0 : p2);
-  const cost1 = s1 - p1;
-  html += `<div>Sell put @ $${{s1}}: collect <span class="green">$${{p1.toFixed(2)}}</span> → effective cost if assigned: <span class="hl">$${{cost1.toFixed(2)}}</span></div>`;
-
-  if (!isNaN(s2) && !isNaN(p2)) {{
-    const cost2 = s2 - p2;
-    const avgCost = (cost1 + cost2) / 2;
-    html += `<div>Sell put @ $${{s2}}: collect <span class="green">$${{p2.toFixed(2)}}</span> → effective cost if assigned: <span class="hl">$${{cost2.toFixed(2)}}</span></div>`;
-    html += `<div style="margin-top:8px">Total premium collected: <span class="green">$${{totalPremium.toFixed(2)}}</span></div>`;
-    html += `<div>Avg effective cost (both assigned): <span class="hl">$${{avgCost.toFixed(2)}}</span></div>`;
-    html += `<div>Max profit (neither assigned): <span class="green">$${{(totalPremium * 100).toFixed(0)}} per pair of contracts</span></div>`;
-  }} else {{
-    html += `<div>Total premium: <span class="green">$${{p1.toFixed(2)}}</span></div>`;
-    html += `<div>Max profit (not assigned): <span class="green">$${{(p1*100).toFixed(0)}} per contract</span></div>`;
-  }}
-
-  r.innerHTML = html;
-}}
-
-function calcSoldCalls() {{
-  const strike = parseFloat(document.getElementById('sc_strike').value);
-  const premium = parseFloat(document.getElementById('sc_premium').value);
-  const basis = parseFloat(document.getElementById('sc_basis').value);
-  const qty = parseInt(document.getElementById('sc_qty').value) || 1;
-  if (isNaN(strike) || isNaN(premium)) {{ alert('Enter strike and premium'); return; }}
-
-  const breakeven = strike + premium;
-  const income = premium * 100 * qty;
-  const effectiveSale = strike + premium;
-
-  const r = document.getElementById('sc_result');
-  r.style.display = 'block';
-
-  let html = `
-    <div>Sell call @ <span class="hl">$${{strike.toFixed(2)}}</span>  ·  Premium: <span class="green">+$${{premium.toFixed(2)}}</span>  ·  Qty: ${{qty}} contract${{qty>1?'s':''}}</div>
-    <div>Premium collected: <span class="green">$${{income.toFixed(0)}}</span></div>
-    <div>Effective sale price if called away: <span class="hl">$${{effectiveSale.toFixed(2)}}</span></div>
-    <div>Stock must stay below <span class="hl">$${{strike.toFixed(2)}}</span> to keep full premium</div>
-  `;
-
-  if (!isNaN(basis)) {{
-    const profit = effectiveSale - basis;
-    const profitPct = (profit / basis * 100);
-    const premiumYield = (premium / basis * 100);
-    html += `<div style="margin-top:8px;border-top:1px solid #222;padding-top:8px;">`;
-    html += `<div>Your cost basis: <span class="hl">$${{basis.toFixed(2)}}</span></div>`;
-    html += `<div>Profit if called away: <span class="${{profit>=0?'green':'red'}}">$${{(profit*100*qty).toFixed(0)}} (${{profitPct.toFixed(1)}}% return)</span></div>`;
-    html += `<div>Premium yield on basis: <span class="green">${{premiumYield.toFixed(2)}}%</span></div>`;
-    if (profit < 0) {{
-      html += `<div><span class="orange">⚠ Called away below your cost basis — you'd take a loss</span></div>`;
-    }}
-    html += `</div>`;
-  }}
-
-  html += `<div style="margin-top:8px;font-size:0.8rem;color:#666;">P&L at various stock prices (called away scenario):</div>`;
-  const scenarios = [strike * 0.95, strike, strike * 1.05, strike * 1.15];
-  scenarios.forEach(p => {{
-    const called = p >= strike;
-    const pnl = called ? (effectiveSale - (isNaN(basis) ? CURRENT_PRICE : basis)) * 100 * qty
-                       : premium * 100 * qty;
-    html += `<div>@ $${{p.toFixed(2)}}: ${{called ? 'called away' : 'keep premium'}} → <span class="${{pnl>=0?'green':'red'}}">$${{pnl.toFixed(0)}}</span></div>`;
+  // Scoped calculate functions — use container.querySelector so each tab is independent
+  q('lp_btn').addEventListener('click', () => {{
+    const strike = parseFloat(q('lp_strike').value);
+    const premium = parseFloat(q('lp_premium').value);
+    const qty = parseInt(q('lp_qty').value) || 1;
+    if (isNaN(strike) || isNaN(premium)) {{ alert('Enter strike and premium'); return; }}
+    const breakeven = strike - premium;
+    const cost = premium * 100 * qty;
+    const r = q('lp_result');
+    r.style.display = 'block';
+    r.innerHTML = `
+      <div>Strike: <span class="hl">$${{strike.toFixed(2)}}</span>  ·  Premium: <span class="hl">$${{premium.toFixed(2)}}</span>  ·  Qty: ${{qty}} contract${{qty>1?'s':''}}</div>
+      <div>Total Cost: <span class="red">$${{cost.toFixed(2)}}</span></div>
+      <div>Break-even: <span class="hl">$${{breakeven.toFixed(2)}}</span> (stock must close below this)</div>
+      <div>Drop needed from <span class="hl">$${{CURRENT_PRICE.toFixed(2)}}</span>: <span class="orange">${{((CURRENT_PRICE - breakeven)/CURRENT_PRICE*100).toFixed(1)}}%</span></div>
+      <div style="margin-top:8px;font-size:0.8rem;color:#666;">P&L at various prices:</div>
+      ${{[breakeven*0.98, breakeven*0.95, breakeven*0.90, breakeven*0.80].map(p => {{
+        const pnl = (strike - p - premium) * 100 * qty;
+        return `<div>@ $${{p.toFixed(2)}}: <span class="${{pnl>0?'green':'red'}}">+$${{pnl.toFixed(0)}}</span></div>`;
+      }}).join('')}}
+    `;
   }});
 
-  r.innerHTML = html;
+  q('sp_btn').addEventListener('click', () => {{
+    const s1 = parseFloat(q('sp_s1').value);
+    const p1 = parseFloat(q('sp_p1').value);
+    const s2 = parseFloat(q('sp_s2').value);
+    const p2 = parseFloat(q('sp_p2').value);
+    if (isNaN(s1) || isNaN(p1)) {{ alert('Enter at least Strike 1 and its premium'); return; }}
+    const r = q('sp_result');
+    r.style.display = 'block';
+    const totalPremium = p1 + (isNaN(p2) ? 0 : p2);
+    const cost1 = s1 - p1;
+    let html = `<div>Sell put @ $${{s1}}: collect <span class="green">$${{p1.toFixed(2)}}</span> → effective cost if assigned: <span class="hl">$${{cost1.toFixed(2)}}</span></div>`;
+    if (!isNaN(s2) && !isNaN(p2)) {{
+      const cost2 = s2 - p2;
+      const avgCost = (cost1 + cost2) / 2;
+      html += `<div>Sell put @ $${{s2}}: collect <span class="green">$${{p2.toFixed(2)}}</span> → effective cost if assigned: <span class="hl">$${{cost2.toFixed(2)}}</span></div>`;
+      html += `<div style="margin-top:8px">Total premium collected: <span class="green">$${{totalPremium.toFixed(2)}}</span></div>`;
+      html += `<div>Avg effective cost (both assigned): <span class="hl">$${{avgCost.toFixed(2)}}</span></div>`;
+      html += `<div>Max profit (neither assigned): <span class="green">$${{(totalPremium * 100).toFixed(0)}} per pair of contracts</span></div>`;
+    }} else {{
+      html += `<div>Total premium: <span class="green">$${{p1.toFixed(2)}}</span></div>`;
+      html += `<div>Max profit (not assigned): <span class="green">$${{(p1*100).toFixed(0)}} per contract</span></div>`;
+    }}
+    r.innerHTML = html;
+  }});
+
+  q('sc_btn').addEventListener('click', () => {{
+    const strike = parseFloat(q('sc_strike').value);
+    const premium = parseFloat(q('sc_premium').value);
+    const basis = parseFloat(q('sc_basis').value);
+    const qty = parseInt(q('sc_qty').value) || 1;
+    if (isNaN(strike) || isNaN(premium)) {{ alert('Enter strike and premium'); return; }}
+    const effectiveSale = strike + premium;
+    const income = premium * 100 * qty;
+    const r = q('sc_result');
+    r.style.display = 'block';
+    let html = `
+      <div>Sell call @ <span class="hl">$${{strike.toFixed(2)}}</span>  ·  Premium: <span class="green">+$${{premium.toFixed(2)}}</span>  ·  Qty: ${{qty}} contract${{qty>1?'s':''}}</div>
+      <div>Premium collected: <span class="green">$${{income.toFixed(0)}}</span></div>
+      <div>Effective sale price if called away: <span class="hl">$${{effectiveSale.toFixed(2)}}</span></div>
+      <div>Stock must stay below <span class="hl">$${{strike.toFixed(2)}}</span> to keep full premium</div>
+    `;
+    if (!isNaN(basis)) {{
+      const profit = effectiveSale - basis;
+      const profitPct = profit / basis * 100;
+      const premiumYield = premium / basis * 100;
+      html += `<div style="margin-top:8px;border-top:1px solid #222;padding-top:8px;">`;
+      html += `<div>Your cost basis: <span class="hl">$${{basis.toFixed(2)}}</span></div>`;
+      html += `<div>Profit if called away: <span class="${{profit>=0?'green':'red'}}">$${{(profit*100*qty).toFixed(0)}} (${{profitPct.toFixed(1)}}% return)</span></div>`;
+      html += `<div>Premium yield on basis: <span class="green">${{premiumYield.toFixed(2)}}%</span></div>`;
+      if (profit < 0) html += `<div><span class="orange">⚠ Called away below your cost basis — you'd take a loss</span></div>`;
+      html += `</div>`;
+    }}
+    html += `<div style="margin-top:8px;font-size:0.8rem;color:#666;">P&L at various stock prices:</div>`;
+    [strike*0.95, strike, strike*1.05, strike*1.15].forEach(p => {{
+      const called = p >= strike;
+      const pnl = called ? (effectiveSale - (isNaN(basis) ? CURRENT_PRICE : basis)) * 100 * qty : income;
+      html += `<div>@ $${{p.toFixed(2)}}: ${{called ? 'called away' : 'keep premium'}} → <span class="${{pnl>=0?'green':'red'}}">$${{pnl.toFixed(0)}}</span></div>`;
+    }});
+    r.innerHTML = html;
+  }});
 }}
 
 // Build tabs and panels
