@@ -214,7 +214,7 @@ def build_html(ticker: str, current_price: float, chains: dict, output_file: str
   /* Strategy Calculator */
   .calc-section {{ margin-top: 24px; }}
   .calc-section h2 {{ font-size: 1rem; color: #ccc; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #222; }}
-  .calc-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }}
+  .calc-grid {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }}
   .calc-box {{ background: #111; border: 1px solid #222; border-radius: 8px; padding: 16px; }}
   .calc-box h3 {{ font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 14px; }}
   .calc-row {{ display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }}
@@ -231,6 +231,9 @@ def build_html(ticker: str, current_price: float, chains: dict, output_file: str
 
   footer {{ padding: 16px 30px; color: #444; font-size: 0.75rem; border-top: 1px solid #1a1a1a; margin-top: 20px; }}
 
+  @media (max-width: 1100px) {{
+    .calc-grid {{ grid-template-columns: 1fr 1fr; }}
+  }}
   @media (max-width: 700px) {{
     .summary, .calc-grid {{ grid-template-columns: 1fr; }}
     header, .tabs, .panel, .key-levels-bar {{ padding-left: 16px; padding-right: 16px; }}
@@ -426,6 +429,17 @@ function buildCalc(container, data) {{
         <div class="calc-result" id="sp_result"></div>
       </div>
 
+      <div class="calc-box">
+        <h3>Sold Calls — Covered Call / Income</h3>
+        <p style="font-size:0.8rem;color:#666;margin-bottom:12px">Sell calls against a position. Shows effective sale price if called away and income collected.</p>
+        <div class="calc-row"><label>Call Strike ($)</label><input id="sc_strike" type="number" placeholder="e.g. 190" step="0.5"></div>
+        <div class="calc-row"><label>Premium Recv ($)</label><input id="sc_premium" type="number" placeholder="e.g. 4.50" step="0.01"></div>
+        <div class="calc-row"><label>Your Cost Basis ($) <small style="color:#555">(opt)</small></label><input id="sc_basis" type="number" placeholder="e.g. 165" step="0.5"></div>
+        <div class="calc-row"><label>Contracts</label><input id="sc_qty" type="number" placeholder="1" value="1" step="1"></div>
+        <button class="calc-btn" onclick="calcSoldCalls()">Calculate</button>
+        <div class="calc-result" id="sc_result"></div>
+      </div>
+
     </div>
   </div>`;
 }}
@@ -482,6 +496,53 @@ function calcSoldPuts() {{
     html += `<div>Total premium: <span class="green">$${{p1.toFixed(2)}}</span></div>`;
     html += `<div>Max profit (not assigned): <span class="green">$${{(p1*100).toFixed(0)}} per contract</span></div>`;
   }}
+
+  r.innerHTML = html;
+}}
+
+function calcSoldCalls() {{
+  const strike = parseFloat(document.getElementById('sc_strike').value);
+  const premium = parseFloat(document.getElementById('sc_premium').value);
+  const basis = parseFloat(document.getElementById('sc_basis').value);
+  const qty = parseInt(document.getElementById('sc_qty').value) || 1;
+  if (isNaN(strike) || isNaN(premium)) {{ alert('Enter strike and premium'); return; }}
+
+  const breakeven = strike + premium;
+  const income = premium * 100 * qty;
+  const effectiveSale = strike + premium;
+
+  const r = document.getElementById('sc_result');
+  r.style.display = 'block';
+
+  let html = `
+    <div>Sell call @ <span class="hl">$${{strike.toFixed(2)}}</span>  ·  Premium: <span class="green">+$${{premium.toFixed(2)}}</span>  ·  Qty: ${{qty}} contract${{qty>1?'s':''}}</div>
+    <div>Premium collected: <span class="green">$${{income.toFixed(0)}}</span></div>
+    <div>Effective sale price if called away: <span class="hl">$${{effectiveSale.toFixed(2)}}</span></div>
+    <div>Stock must stay below <span class="hl">$${{strike.toFixed(2)}}</span> to keep full premium</div>
+  `;
+
+  if (!isNaN(basis)) {{
+    const profit = effectiveSale - basis;
+    const profitPct = (profit / basis * 100);
+    const premiumYield = (premium / basis * 100);
+    html += `<div style="margin-top:8px;border-top:1px solid #222;padding-top:8px;">`;
+    html += `<div>Your cost basis: <span class="hl">$${{basis.toFixed(2)}}</span></div>`;
+    html += `<div>Profit if called away: <span class="${{profit>=0?'green':'red'}}">$${{(profit*100*qty).toFixed(0)}} (${{profitPct.toFixed(1)}}% return)</span></div>`;
+    html += `<div>Premium yield on basis: <span class="green">${{premiumYield.toFixed(2)}}%</span></div>`;
+    if (profit < 0) {{
+      html += `<div><span class="orange">⚠ Called away below your cost basis — you'd take a loss</span></div>`;
+    }}
+    html += `</div>`;
+  }}
+
+  html += `<div style="margin-top:8px;font-size:0.8rem;color:#666;">P&L at various stock prices (called away scenario):</div>`;
+  const scenarios = [strike * 0.95, strike, strike * 1.05, strike * 1.15];
+  scenarios.forEach(p => {{
+    const called = p >= strike;
+    const pnl = called ? (effectiveSale - (isNaN(basis) ? CURRENT_PRICE : basis)) * 100 * qty
+                       : premium * 100 * qty;
+    html += `<div>@ $${{p.toFixed(2)}}: ${{called ? 'called away' : 'keep premium'}} → <span class="${{pnl>=0?'green':'red'}}">$${{pnl.toFixed(0)}}</span></div>`;
+  }});
 
   r.innerHTML = html;
 }}
