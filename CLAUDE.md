@@ -83,7 +83,7 @@ $140–$150 ← general support zone (low end)
 - **Entry point**: `app.py` (web server), `analyze.py` (core logic + HTML generation)
 - **Data source**: Yahoo Finance via yfinance (free, no auth needed)
 - **Railway CLI**: not installed locally — deployments happen via `git push origin main`
-- **URL**: not yet stored — Anthony to add it here when confirmed
+- **URL**: https://support-level-finder-production.up.railway.app/
 
 ---
 
