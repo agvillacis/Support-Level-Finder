@@ -264,7 +264,7 @@ function formatOI(n) {{
   return n.toString();
 }}
 
-function topLevels(data, side, n=5) {{
+function topLevels(data, side, n=20) {{
   const {{ strikes, put_oi, call_oi, put_last, put_bid, put_ask, put_iv, call_last, call_bid, call_ask, call_iv }} = data;
   let pairs = strikes.map((s,i) => ({{
     strike: s,
