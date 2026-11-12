@@ -341,7 +341,8 @@ function buildChart(container, data) {{
     xaxis: {{
       title: 'Strike Price ($)',
       gridcolor: '#1f1f1f',
-      tickformat: '$.0f',
+      tickprefix: '$',
+      range: [chartMin, chartMax],
     }},
     yaxis: {{
       title: 'Open Interest (contracts)',
