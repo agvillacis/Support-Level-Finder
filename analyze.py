@@ -185,7 +185,7 @@ def build_html(ticker: str, current_price: float, chains: dict, output_file: str
   .tab.active {{ color: #fff; background: #1a1a2e; border-color: #333; }}
   .panel {{ display: none; padding: 24px 30px; }}
   .panel.active {{ display: block; }}
-  .chart-wrap {{ background: #111; border: 1px solid #222; border-radius: 8px; padding: 12px; }}
+  .chart-wrap {{ background: #111; border: 1px solid #222; border-radius: 8px; padding: 12px; min-height: 420px; }}
   .summary {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }}
   .summary-box {{ background: #111; border: 1px solid #222; border-radius: 8px; padding: 16px; }}
   .summary-box h3 {{ font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }}
@@ -335,6 +335,7 @@ function buildChart(container, data) {{
 
   const layout = {{
     barmode: 'group',
+    height: 400,
     paper_bgcolor: '#111',
     plot_bgcolor: '#111',
     font: {{ color: '#ccc', size: 11 }},
