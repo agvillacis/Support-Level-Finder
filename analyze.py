@@ -302,24 +302,34 @@ function buildChart(container, data) {{
     font: {{ color: kl.color, size: 10 }},
   }}));
 
+  // Filter data to ±35% of current price so far-OTM strikes don't crush the y-axis
+  const rangeMin = CURRENT_PRICE * 0.65;
+  const rangeMax = CURRENT_PRICE * 1.35;
+  const idx = data.strikes.map((s,i) => i).filter(i => data.strikes[i] >= rangeMin && data.strikes[i] <= rangeMax);
+  const fStrikes   = idx.map(i => data.strikes[i]);
+  const fPutOI     = idx.map(i => data.put_oi[i]);
+  const fCallOI    = idx.map(i => data.call_oi[i]);
+  const fPutMeta   = idx.map(i => [data.put_last[i], data.put_bid[i], data.put_ask[i], data.put_iv[i]]);
+  const fCallMeta  = idx.map(i => [data.call_last[i], data.call_bid[i], data.call_ask[i], data.call_iv[i]]);
+
   const traces = [
     {{
       name: 'Put OI (Support)',
-      x: data.strikes,
-      y: data.put_oi,
+      x: fStrikes,
+      y: fPutOI,
       type: 'bar',
-      marker: {{ color: data.strikes.map(s => s <= CURRENT_PRICE ? '#4caf50' : '#2a5c2a') }},
+      marker: {{ color: fStrikes.map(s => s <= CURRENT_PRICE ? '#4caf50' : '#2a5c2a') }},
       hovertemplate: 'Strike $%{{x}}<br>Put OI: %{{y:,}}<br>Last: $%{{customdata[0]}}<br>Bid/Ask: $%{{customdata[1]}}/$%{{customdata[2]}}<br>IV: %{{customdata[3]}}%<extra></extra>',
-      customdata: data.strikes.map((_,i) => [data.put_last[i], data.put_bid[i], data.put_ask[i], data.put_iv[i]]),
+      customdata: fPutMeta,
     }},
     {{
       name: 'Call OI (Resistance)',
-      x: data.strikes,
-      y: data.call_oi,
+      x: fStrikes,
+      y: fCallOI,
       type: 'bar',
-      marker: {{ color: data.strikes.map(s => s >= CURRENT_PRICE ? '#ef5350' : '#5c2a2a') }},
+      marker: {{ color: fStrikes.map(s => s >= CURRENT_PRICE ? '#ef5350' : '#5c2a2a') }},
       hovertemplate: 'Strike $%{{x}}<br>Call OI: %{{y:,}}<br>Last: $%{{customdata[0]}}<br>Bid/Ask: $%{{customdata[1]}}/$%{{customdata[2]}}<br>IV: %{{customdata[3]}}%<extra></extra>',
-      customdata: data.strikes.map((_,i) => [data.call_last[i], data.call_bid[i], data.call_ask[i], data.call_iv[i]]),
+      customdata: fCallMeta,
     }}
   ];
 
@@ -332,7 +342,6 @@ function buildChart(container, data) {{
       title: 'Strike Price ($)',
       gridcolor: '#1f1f1f',
       tickformat: '$.0f',
-      range: [CURRENT_PRICE * 0.65, CURRENT_PRICE * 1.35],
     }},
     yaxis: {{
       title: 'Open Interest (contracts)',
