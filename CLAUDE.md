@@ -29,7 +29,13 @@ $152  ← primary support level (key)
 $147  ← secondary support level
 $145  ← EJECT — hits this, he's out
 $140–$150 ← general support zone (low end)
+   ↓ (potential air pocket if $145 breaks)
+$115  ← institutional stop loss cluster
+$110  ← institutional stop loss cluster
+$100  ← institutional stop loss cluster (major round number)
 ```
+
+**Note on institutional stops**: His friend identified $100/$110/$115 as where institutional stop losses are stacked. If $145 breaks, there's limited support between there and $100-$115 — it could flush fast.
 
 ### Strategies He Uses
 
