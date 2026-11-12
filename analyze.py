@@ -78,15 +78,17 @@ def fetch_yfinance(ticker: str, target_expirations: list[str]):
         chain = stock.option_chain(best)
 
         import pandas as pd
-        calls = chain.calls[["strike", "openInterest", "lastPrice", "bid", "ask", "impliedVolatility"]].rename(columns={
+        calls = chain.calls[["strike", "openInterest", "volume", "lastPrice", "bid", "ask", "impliedVolatility"]].rename(columns={
             "openInterest": "call_oi",
+            "volume": "call_vol",
             "lastPrice": "call_last",
             "bid": "call_bid",
             "ask": "call_ask",
             "impliedVolatility": "call_iv",
         })
-        puts = chain.puts[["strike", "openInterest", "lastPrice", "bid", "ask", "impliedVolatility"]].rename(columns={
+        puts = chain.puts[["strike", "openInterest", "volume", "lastPrice", "bid", "ask", "impliedVolatility"]].rename(columns={
             "openInterest": "put_oi",
+            "volume": "put_vol",
             "lastPrice": "put_last",
             "bid": "put_bid",
             "ask": "put_ask",
@@ -102,6 +104,8 @@ def fetch_yfinance(ticker: str, target_expirations: list[str]):
             "strikes": merged["strike"].tolist(),
             "call_oi": merged["call_oi"].astype(int).tolist(),
             "put_oi":  merged["put_oi"].astype(int).tolist(),
+            "call_vol": merged["call_vol"].astype(int).tolist(),
+            "put_vol":  merged["put_vol"].astype(int).tolist(),
             "call_last": merged["call_last"].round(2).tolist(),
             "call_bid":  merged["call_bid"].round(2).tolist(),
             "call_ask":  merged["call_ask"].round(2).tolist(),
@@ -152,6 +156,8 @@ def build_html(ticker: str, current_price: float, chains: dict, output_file: str
             "strikes": data["strikes"],
             "call_oi": data["call_oi"],
             "put_oi": data["put_oi"],
+            "call_vol": data.get("call_vol", []),
+            "put_vol": data.get("put_vol", []),
             "call_last": data.get("call_last", []),
             "call_bid":  data.get("call_bid", []),
             "call_ask":  data.get("call_ask", []),
@@ -370,6 +376,60 @@ function buildChart(container, data) {{
       }},
       ...keyAnnotations
     ]
+  }};
+
+  Plotly.newPlot(container, traces, layout, {{responsive: true, displayModeBar: false}});
+}}
+
+function buildVolumeChart(container, data) {{
+  const chartMin = CURRENT_PRICE * 0.75;
+  const chartMax = CURRENT_PRICE * 1.25;
+  const idx = data.strikes.map((s,i) => i).filter(i => data.strikes[i] >= chartMin && data.strikes[i] <= chartMax);
+  const fStrikes  = idx.map(i => data.strikes[i]);
+  const fPutVol   = idx.map(i => (data.put_vol || [])[i] || 0);
+  const fCallVol  = idx.map(i => (data.call_vol || [])[i] || 0);
+
+  const traces = [
+    {{
+      name: 'Put Volume',
+      x: fStrikes, y: fPutVol,
+      type: 'bar',
+      marker: {{ color: fStrikes.map(s => s <= CURRENT_PRICE ? '#4caf50' : '#2a5c2a') }},
+      hovertemplate: 'Strike $%{{x}}<br>Put Vol: %{{y:,}}<extra></extra>',
+    }},
+    {{
+      name: 'Call Volume',
+      x: fStrikes, y: fCallVol,
+      type: 'bar',
+      marker: {{ color: fStrikes.map(s => s >= CURRENT_PRICE ? '#ef5350' : '#5c2a2a') }},
+      hovertemplate: 'Strike $%{{x}}<br>Call Vol: %{{y:,}}<extra></extra>',
+    }}
+  ];
+
+  const layout = {{
+    barmode: 'group',
+    height: 280,
+    paper_bgcolor: '#111',
+    plot_bgcolor: '#111',
+    font: {{ color: '#ccc', size: 11 }},
+    xaxis: {{
+      title: 'Strike Price ($)',
+      gridcolor: '#1f1f1f',
+      tickprefix: '$',
+      range: [chartMin, chartMax],
+    }},
+    yaxis: {{
+      title: 'Volume (contracts today)',
+      gridcolor: '#1f1f1f',
+    }},
+    legend: {{ bgcolor: 'transparent', x: 0.01, y: 0.99 }},
+    margin: {{ t: 10, r: 100, b: 60, l: 70 }},
+    shapes: [{{
+      type: 'line',
+      x0: CURRENT_PRICE, x1: CURRENT_PRICE,
+      y0: 0, y1: 1, yref: 'paper',
+      line: {{ color: '#fff', width: 1.5, dash: 'dot' }},
+    }}],
   }};
 
   Plotly.newPlot(container, traces, layout, {{responsive: true, displayModeBar: false}});
@@ -600,6 +660,17 @@ CHAINS.forEach((data, i) => {{
   chartDiv.id = data.id + '_chart';
   panel.appendChild(chartDiv);
 
+  const volLabel = document.createElement('div');
+  volLabel.style.cssText = 'color:#aaa;font-size:0.75rem;text-transform:uppercase;letter-spacing:.08em;margin:20px 0 4px';
+  volLabel.textContent = 'Today’s Volume';
+  panel.appendChild(volLabel);
+
+  const volDiv = document.createElement('div');
+  volDiv.className = 'chart-wrap';
+  volDiv.id = data.id + '_vol';
+  volDiv.style.minHeight = '300px';
+  panel.appendChild(volDiv);
+
   const summaryDiv = document.createElement('div');
   panel.appendChild(summaryDiv);
 
@@ -610,6 +681,7 @@ CHAINS.forEach((data, i) => {{
 
   setTimeout(() => {{
     buildChart(chartDiv, data);
+    buildVolumeChart(volDiv, data);
     buildSummary(summaryDiv, data);
     buildCalc(calcDiv, data);
   }}, i * 100);
