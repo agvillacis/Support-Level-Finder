@@ -302,28 +302,25 @@ function buildChart(container, data) {{
     font: {{ color: kl.color, size: 10 }},
   }}));
 
-  // Filter data to ±35% of current price so far-OTM strikes don't crush the y-axis
-  const rangeMin = CURRENT_PRICE * 0.65;
-  const rangeMax = CURRENT_PRICE * 1.35;
-  const idx = data.strikes.map((s,i) => i).filter(i => data.strikes[i] >= rangeMin && data.strikes[i] <= rangeMax);
-  const fStrikes   = idx.map(i => data.strikes[i]);
-  const fPutOI     = idx.map(i => data.put_oi[i]);
-  const fCallOI    = idx.map(i => data.call_oi[i]);
-  const fPutMeta   = idx.map(i => [data.put_last[i], data.put_bid[i], data.put_ask[i], data.put_iv[i]]);
-  const fCallMeta  = idx.map(i => [data.call_last[i], data.call_bid[i], data.call_ask[i], data.call_iv[i]]);
-
-  // Mirrored chart: calls positive (up), puts negative (down) — one bar per strike
-  const fPutOIneg = fPutOI.map(v => -v);
+  // Filter chart to ±25% of current price — includes key levels while keeping bars visible
+  const chartMin = CURRENT_PRICE * 0.75;
+  const chartMax = CURRENT_PRICE * 1.25;
+  const idx = data.strikes.map((s,i) => i).filter(i => data.strikes[i] >= chartMin && data.strikes[i] <= chartMax);
+  const fStrikes  = idx.map(i => data.strikes[i]);
+  const fPutOI    = idx.map(i => data.put_oi[i]);
+  const fCallOI   = idx.map(i => data.call_oi[i]);
+  const fPutMeta  = idx.map(i => [data.put_last[i], data.put_bid[i], data.put_ask[i], data.put_iv[i]]);
+  const fCallMeta = idx.map(i => [data.call_last[i], data.call_bid[i], data.call_ask[i], data.call_iv[i]]);
 
   const traces = [
     {{
       name: 'Put OI (Support)',
       x: fStrikes,
-      y: fPutOIneg,
+      y: fPutOI,
       type: 'bar',
       marker: {{ color: fStrikes.map(s => s <= CURRENT_PRICE ? '#4caf50' : '#2a5c2a') }},
-      hovertemplate: 'Strike $%{{x}}<br>Put OI: %{{customdata[4]:,}}<br>Last: $%{{customdata[0]}}<br>Bid/Ask: $%{{customdata[1]}}/$%{{customdata[2]}}<br>IV: %{{customdata[3]}}%<extra></extra>',
-      customdata: fPutMeta.map((m,i) => [...m, fPutOI[i]]),
+      hovertemplate: 'Strike $%{{x}}<br>Put OI: %{{y:,}}<br>Last: $%{{customdata[0]}}<br>Bid/Ask: $%{{customdata[1]}}/$%{{customdata[2]}}<br>IV: %{{customdata[3]}}%<extra></extra>',
+      customdata: fPutMeta,
     }},
     {{
       name: 'Call OI (Resistance)',
@@ -337,7 +334,7 @@ function buildChart(container, data) {{
   ];
 
   const layout = {{
-    barmode: 'overlay',
+    barmode: 'group',
     paper_bgcolor: '#111',
     plot_bgcolor: '#111',
     font: {{ color: '#ccc', size: 11 }},
@@ -347,7 +344,7 @@ function buildChart(container, data) {{
       tickformat: '$.0f',
     }},
     yaxis: {{
-      title: 'Open Interest (contracts) — calls ↑  puts ↓',
+      title: 'Open Interest (contracts)',
       gridcolor: '#1f1f1f',
     }},
     legend: {{ bgcolor: 'transparent', x: 0.01, y: 0.99 }},
