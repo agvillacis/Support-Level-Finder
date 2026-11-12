@@ -415,13 +415,14 @@ function buildCalc(container, data) {{
   container.innerHTML = `
   <div class="calc-section">
     <h2>⚡ Options Strategy Calculator</h2>
+    <p style="font-size:0.75rem;color:#555;margin-bottom:12px">Type a strike and press Enter — premium auto-fills from live chain data for this expiration.</p>
     <div class="calc-grid">
 
       <div class="calc-box">
         <h3>Long Put — Protective Hedge</h3>
         <p style="font-size:0.8rem;color:#666;margin-bottom:12px">Buy a put for downside protection. Calculates breakeven and profit zones.</p>
         <div class="calc-row"><label>Put Strike ($)</label><input id="lp_strike" type="number" placeholder="e.g. 160" step="0.5"></div>
-        <div class="calc-row"><label>Premium Paid ($)</label><input id="lp_premium" type="number" placeholder="e.g. 6.30" step="0.01"></div>
+        <div class="calc-row"><label>Premium Paid ($)</label><input id="lp_premium" type="number" placeholder="auto-fills ↑" step="0.01"></div>
         <div class="calc-row"><label>Contracts</label><input id="lp_qty" type="number" placeholder="1" value="1" step="1"></div>
         <button class="calc-btn" onclick="calcLongPut()">Calculate</button>
         <div class="calc-result" id="lp_result"></div>
@@ -431,9 +432,9 @@ function buildCalc(container, data) {{
         <h3>Sold Puts — Cost Basis if Assigned</h3>
         <p style="font-size:0.8rem;color:#666;margin-bottom:12px">Sell puts to collect premium. Shows effective cost if assigned at each strike.</p>
         <div class="calc-row"><label>Strike 1 ($)</label><input id="sp_s1" type="number" placeholder="e.g. 170" step="0.5"></div>
-        <div class="calc-row"><label>Premium Recv ($)</label><input id="sp_p1" type="number" placeholder="e.g. 5.00" step="0.01"></div>
+        <div class="calc-row"><label>Premium Recv ($)</label><input id="sp_p1" type="number" placeholder="auto-fills ↑" step="0.01"></div>
         <div class="calc-row"><label>Strike 2 ($) <small style="color:#555">(opt)</small></label><input id="sp_s2" type="number" placeholder="e.g. 165" step="0.5"></div>
-        <div class="calc-row"><label>Premium Recv ($)</label><input id="sp_p2" type="number" placeholder="e.g. 5.00" step="0.01"></div>
+        <div class="calc-row"><label>Premium Recv ($)</label><input id="sp_p2" type="number" placeholder="auto-fills ↑" step="0.01"></div>
         <button class="calc-btn" onclick="calcSoldPuts()">Calculate</button>
         <div class="calc-result" id="sp_result"></div>
       </div>
@@ -442,7 +443,7 @@ function buildCalc(container, data) {{
         <h3>Sold Calls — Covered Call (Own Shares)</h3>
         <p style="font-size:0.8rem;color:#666;margin-bottom:12px">You own the shares and sell a call above your cost basis. Collect premium now; if stock rises above strike, shares get called away at that price.</p>
         <div class="calc-row"><label>Call Strike ($)</label><input id="sc_strike" type="number" placeholder="e.g. 190" step="0.5"></div>
-        <div class="calc-row"><label>Premium Recv ($)</label><input id="sc_premium" type="number" placeholder="e.g. 4.50" step="0.01"></div>
+        <div class="calc-row"><label>Premium Recv ($)</label><input id="sc_premium" type="number" placeholder="auto-fills ↑" step="0.01"></div>
         <div class="calc-row"><label>Your Cost Basis ($)</label><input id="sc_basis" type="number" placeholder="e.g. 165" step="0.5"></div>
         <div class="calc-row"><label>Contracts</label><input id="sc_qty" type="number" placeholder="1" value="1" step="1"></div>
         <button class="calc-btn" onclick="calcSoldCalls()">Calculate</button>
@@ -451,6 +452,38 @@ function buildCalc(container, data) {{
 
     </div>
   </div>`;
+
+  // Auto-fill premium when strike is entered (Enter key or blur)
+  function lookupPremium(strikeVal, lastArr, bidArr, askArr) {{
+    const target = parseFloat(strikeVal);
+    if (isNaN(target)) return '';
+    let best = -1, bestDist = Infinity;
+    data.strikes.forEach((s, i) => {{
+      const d = Math.abs(s - target);
+      if (d < bestDist) {{ bestDist = d; best = i; }}
+    }});
+    if (best < 0 || bestDist > 5) return '';
+    const bid = bidArr[best], ask = askArr[best], last = lastArr[best];
+    if (bid > 0 && ask > 0) return ((bid + ask) / 2).toFixed(2);
+    return last > 0 ? last.toFixed(2) : '';
+  }}
+
+  function wireAutoFill(strikeId, premiumId, lastArr, bidArr, askArr) {{
+    const strikeInput = container.querySelector('#' + strikeId);
+    const premiumInput = container.querySelector('#' + premiumId);
+    if (!strikeInput || !premiumInput) return;
+    const fill = () => {{
+      const val = lookupPremium(strikeInput.value, lastArr, bidArr, askArr);
+      if (val) {{ premiumInput.value = val; premiumInput.style.borderColor = '#2563eb'; }}
+    }};
+    strikeInput.addEventListener('change', fill);
+    strikeInput.addEventListener('keydown', e => {{ if (e.key === 'Enter') fill(); }});
+  }}
+
+  wireAutoFill('lp_strike', 'lp_premium', data.put_last, data.put_bid, data.put_ask);
+  wireAutoFill('sp_s1', 'sp_p1', data.put_last, data.put_bid, data.put_ask);
+  wireAutoFill('sp_s2', 'sp_p2', data.put_last, data.put_bid, data.put_ask);
+  wireAutoFill('sc_strike', 'sc_premium', data.call_last, data.call_bid, data.call_ask);
 }}
 
 function calcLongPut() {{
