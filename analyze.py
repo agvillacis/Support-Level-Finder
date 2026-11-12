@@ -430,11 +430,11 @@ function buildCalc(container, data) {{
       </div>
 
       <div class="calc-box">
-        <h3>Sold Calls — Covered Call / Income</h3>
-        <p style="font-size:0.8rem;color:#666;margin-bottom:12px">Sell calls against a position. Shows effective sale price if called away and income collected.</p>
+        <h3>Sold Calls — Covered Call (Own Shares)</h3>
+        <p style="font-size:0.8rem;color:#666;margin-bottom:12px">You own the shares and sell a call above your cost basis. Collect premium now; if stock rises above strike, shares get called away at that price.</p>
         <div class="calc-row"><label>Call Strike ($)</label><input id="sc_strike" type="number" placeholder="e.g. 190" step="0.5"></div>
         <div class="calc-row"><label>Premium Recv ($)</label><input id="sc_premium" type="number" placeholder="e.g. 4.50" step="0.01"></div>
-        <div class="calc-row"><label>Your Cost Basis ($) <small style="color:#555">(opt)</small></label><input id="sc_basis" type="number" placeholder="e.g. 165" step="0.5"></div>
+        <div class="calc-row"><label>Your Cost Basis ($)</label><input id="sc_basis" type="number" placeholder="e.g. 165" step="0.5"></div>
         <div class="calc-row"><label>Contracts</label><input id="sc_qty" type="number" placeholder="1" value="1" step="1"></div>
         <button class="calc-btn" onclick="calcSoldCalls()">Calculate</button>
         <div class="calc-result" id="sc_result"></div>
