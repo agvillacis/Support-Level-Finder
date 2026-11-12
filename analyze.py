@@ -266,6 +266,8 @@ function formatOI(n) {{
 
 function topLevels(data, side, n=20) {{
   const {{ strikes, put_oi, call_oi, put_last, put_bid, put_ask, put_iv, call_last, call_bid, call_ask, call_iv }} = data;
+  const rangeMin = CURRENT_PRICE * 0.65;
+  const rangeMax = CURRENT_PRICE * 1.35;
   let pairs = strikes.map((s,i) => ({{
     strike: s,
     oi: side === 'support' ? put_oi[i] : call_oi[i],
@@ -274,8 +276,8 @@ function topLevels(data, side, n=20) {{
     ask:  side === 'support' ? put_ask[i] : call_ask[i],
     iv:   side === 'support' ? put_iv[i] : call_iv[i],
   }}));
-  if (side === 'support') pairs = pairs.filter(p => p.strike <= CURRENT_PRICE);
-  else pairs = pairs.filter(p => p.strike >= CURRENT_PRICE);
+  if (side === 'support') pairs = pairs.filter(p => p.strike <= CURRENT_PRICE && p.strike >= rangeMin);
+  else pairs = pairs.filter(p => p.strike >= CURRENT_PRICE && p.strike <= rangeMax);
   pairs.sort((a,b) => b.oi - a.oi);
   return pairs.slice(0, n);
 }}
@@ -327,6 +329,7 @@ function buildChart(container, data) {{
       title: 'Strike Price ($)',
       gridcolor: '#1f1f1f',
       tickformat: '$.0f',
+      range: [CURRENT_PRICE * 0.65, CURRENT_PRICE * 1.35],
     }},
     yaxis: {{
       title: 'Open Interest (contracts)',
