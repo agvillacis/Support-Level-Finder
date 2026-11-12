@@ -88,14 +88,74 @@ $100  ← institutional stop loss cluster (major round number)
 - **Stack**: Python / Flask / yfinance / Plotly
 - **Entry point**: `app.py` (web server), `analyze.py` (core logic + HTML generation)
 - **Data source**: Yahoo Finance via yfinance (free, no auth needed)
-- **Railway CLI**: not installed locally — deployments happen via `git push origin main`
-- **URL**: https://support-level-finder-production.up.railway.app/
+- **Railway CLI**: `~/.railway/bin/railway` — deploy directly without GitHub webhook
+- **Production URL**: https://support-level-finder-production.up.railway.app/
+- **Staging URL**: TBD — set up staging environment in Railway dashboard (fork production service to staging environment)
+
+---
+
+## Git & Deployment Workflow
+
+### Branches
+- `main` → **production** — only merge here when staging looks good
+- `develop` → **staging** — all new work goes here first
+
+### Daily workflow
+```bash
+# Start work on develop
+git checkout develop
+
+# Make changes, test locally, commit
+git add analyze.py app.py
+git commit -m "feat: description"
+
+# Deploy to staging to verify
+~/.railway/bin/railway up --service "Support-Level-Finder" --environment staging --detach
+
+# Once staging looks good → merge to main → deploy to prod
+git checkout main
+git merge develop
+git push origin main
+~/.railway/bin/railway up --service "Support-Level-Finder" --environment production --detach
+```
+
+### Versioning
+Tags follow semver: `v<major>.<minor>.<patch>`
+- Patch (v0.4.1): bug fixes
+- Minor (v0.5.0): new features (new calculator type, new chart option)
+- Major (v1.0.0): major redesign or breaking change
+
+```bash
+# Tag a release after merging to main
+git tag v0.5.0 -m "Description of what changed"
+git push origin --tags
+```
+
+### Reverting to a previous version
+```bash
+# See what versions exist
+git tag -l --sort=-version:refname
+
+# Check out what a version looked like
+git show v0.3.0:analyze.py
+
+# Roll back production to a specific tag
+git checkout main
+git reset --hard v0.3.0
+~/.railway/bin/railway up --detach   # deploys the rolled-back code
+```
+
+### Version history
+- **v0.1.0** — Initial release: OI wall chart + top support/resistance levels
+- **v0.2.0** — Premium data, key level annotations, strategy calculator (Long Put + Sold Puts)
+- **v0.3.0** — Sold Calls calculator, premium auto-fill on strike entry
+- **v0.4.0** — Fix This Week chart, fix calculator scoping across all tabs
 
 ---
 
 ## Known Issues / TODOs
 
-- [ ] Store the Railway deployment URL in this file
+- [ ] Staging Railway service needs to be created: in Railway dashboard, open the staging environment and fork the production service
 - [ ] yfinance data can be delayed ~15 min during market hours; real-time would need Schwab API (skeleton exists in `analyze.py` → `fetch_schwab()`)
 - [ ] The 3rd tab label logic uses a Python f-string that embeds the label at build time — if custom expiration label contains special chars it could break the JS
 - [ ] No caching — every request re-fetches from Yahoo Finance (slow for high-traffic)
